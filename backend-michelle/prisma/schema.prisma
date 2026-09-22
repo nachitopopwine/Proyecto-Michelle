@@ -1,0 +1,57 @@
+// schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  PATIENT
+  ADMIN
+}
+
+enum Status {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  password     String        // Hash con bcrypt
+  name         String
+  phone        String?
+  role         Role          @default(PATIENT)
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+}
+
+model Appointment {
+  id            String        @id @default(uuid())
+  date          DateTime      // Fecha y hora de la cita
+  type          String        // Online, Presencial, Domicilio
+  status        Status        @default(CONFIRMED)
+  patientId     String
+  patient       User          @relation(fields: [patientId], references: [id])
+  consultation  Consultation? // Relación 1 a 1 con el registro clínico
+  eventId       String?       // ID del evento en Google Calendar
+  createdAt     DateTime      @default(now())
+}
+
+model Consultation {
+  id            String      @id @default(uuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  weight        Float?
+  bodyFat       Float?
+  muscleMass    Float?
+  notes         String?     // Anamnesis
+  actionPlan    String?     // Indicaciones para el PDF
+  createdAt     DateTime    @default(now())
+}
