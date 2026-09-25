@@ -1,24 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import type { AppointmentDocument } from './entities/appointment.entity';
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectModel('Appointment')
+    private appointmentModel: Model<AppointmentDocument>,
+  ) {}
 
   async create(data: any) {
-    // En Prisma, el modelo Appointment espera un DateTime.
-    // Asumimos que desde React envías un string ISO, por ejemplo: "2026-08-15T15:00:00.000Z"
     const appointmentDate = new Date(data.date);
 
-    const newAppointment = await this.prisma.appointment.create({
-      data: {
-        date: appointmentDate,
-        type: data.type, // 'Online', 'Presencial', 'Domicilio'
-        patientId: data.patientId, // El ID del usuario que está agendando
-        status: 'PENDING',
-      },
+    return this.appointmentModel.create({
+      date: appointmentDate,
+      type: data.type,
+      patientId: data.patientId,
+      status: 'PENDING',
     });
-
-    return newAppointment;
   }
 }

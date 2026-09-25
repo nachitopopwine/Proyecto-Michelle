@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+'use client';
+
+import { useState } from 'react';
 import { 
   Heart, Leaf, Calendar as CalendarIcon, CheckCircle2, Clock, MapPin, Video, Home, ChevronRight, 
   Info, Menu, X, BookOpen, User, Lock, LogOut, FileText, Send, XCircle, Search, Mail, ChevronLeft
@@ -314,7 +316,7 @@ export default function NutricionistaSystem() {
             <div className="w-full lg:w-1/2 relative">
               <div className="aspect-[4/5] rounded-3xl overflow-hidden relative shadow-2xl">
                 <img 
-                  src={fotoMichelle} 
+                  src={fotoMichelle.src}
                   alt="Michelle Morales - Nutricionista" 
                   className="w-full h-full object-cover"
                 />
@@ -515,6 +517,10 @@ export default function NutricionistaSystem() {
           </div>
         </div>
       </section>
+
+      <footer className="bg-slate-900 px-4 py-8 text-center text-sm text-slate-300">
+        <p>Michelle Morales | 2026 | Arquitectura de Sistemas y Cloud Computing</p>
+      </footer>
 
     </div>
   );

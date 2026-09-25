@@ -1,18 +1,16 @@
 import { Controller, Post, Body } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AppointmentsService } from './appointments.service';
+import { CreateAppointmentDto } from './dto/create-appointment.dto';
 
 @Controller('appointments')
+@ApiTags('appointments')
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
-  create(@Body() body: any) {
-    // El body enviado desde React debe verse así:
-    // {
-    //   "date": "2026-08-15T15:00:00.000Z",
-    //   "type": "Online",
-    //   "patientId": "ID-DEL-USUARIO-OBTENIDO-AL-LOGIN"
-    // }
+  @ApiOperation({ summary: 'Crear una cita' })
+  create(@Body() body: CreateAppointmentDto) {
     return this.appointmentsService.create(body);
   }
 }

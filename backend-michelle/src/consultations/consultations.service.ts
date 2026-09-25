@@ -1,26 +1,34 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
+import type { ConsultationDocument } from './entities/consultation.entity';
 
 @Injectable()
 export class ConsultationsService {
+  constructor(
+    @InjectModel('Consultation')
+    private consultationModel: Model<ConsultationDocument>,
+  ) {}
+
   create(createConsultationDto: CreateConsultationDto) {
-    return 'This action adds a new consultation';
+    return this.consultationModel.create(createConsultationDto);
   }
 
   findAll() {
-    return `This action returns all consultations`;
+    return this.consultationModel.find().sort({ createdAt: -1 }).exec();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} consultation`;
+  findOne(id: string) {
+    return this.consultationModel.findById(id).exec();
   }
 
-  update(id: number, updateConsultationDto: UpdateConsultationDto) {
-    return `This action updates a #${id} consultation`;
+  update(id: string, updateConsultationDto: UpdateConsultationDto) {
+    return this.consultationModel.findByIdAndUpdate(id, updateConsultationDto, { new: true }).exec();
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} consultation`;
+  remove(id: string) {
+    return this.consultationModel.findByIdAndDelete(id).exec();
   }
 }
