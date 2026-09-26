@@ -519,7 +519,7 @@ export default function NutricionistaSystem() {
       </section>
 
       <footer className="bg-slate-900 px-4 py-8 text-center text-sm text-slate-300">
-        <p>Michelle Morales | 2026 | Arquitectura de Sistemas y Cloud Computing</p>
+        <p>Ignacio Rodríguez • Claudio Palta | 2026 | Cloud Computing</p>
       </footer>
 
     </div>
