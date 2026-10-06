@@ -16,10 +16,15 @@ services:
     build: ./backend-michelle
     restart: unless-stopped
     environment:
+      NODE_ENV: ${NODE_ENV:-development}
       PORT: 3000
       MONGODB_URI: mongodb://mongo:27017/michelle
       JWT_SECRET: ${JWT_SECRET:-change-this-secret}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NAME: ${ADMIN_NAME:-Michelle Morales}
     depends_on:
       mongo:
         condition: service_healthy
@@ -27,7 +32,11 @@ services:
       - "3000:3000"
 
   frontend:
-    build: ./web-michelle
+    build:
+      context: ./web-michelle
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     restart: unless-stopped
     environment:
       PORT: 3001

@@ -5,15 +5,37 @@ import {
   Heart, Leaf, Calendar as CalendarIcon, CheckCircle2, Clock, MapPin, Video, Home, ChevronRight, 
   Info, Menu, X, BookOpen, User, Lock, LogOut, FileText, Send, XCircle, Search, Mail, ChevronLeft
 } from 'lucide-react';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 // Importación de la imagen con la ruta correcta
 import fotoMichelle from './assets/foto-michelle.jpeg'; 
+import { authenticatedRequest, apiRequest } from './lib/api';
 
 export default function NutricionistaSystem() {
   // Estados de la aplicación
-  const [currentUser, setCurrentUser] = useState(null); // null, 'patient', 'admin'
-  const [currentView, setCurrentView] = useState('landing'); // landing, admin_dashboard, consultation
+  const [currentUser, setCurrentUser] = useState(() => (
+    typeof window === 'undefined' ? null : window.localStorage.getItem('userRole')
+  )); // null, 'patient', 'admin'
+  const [currentView, setCurrentView] = useState(() => (
+    typeof window !== 'undefined' && window.localStorage.getItem('userRole') === 'admin'
+      ? 'admin_dashboard'
+      : 'landing'
+  )); // landing, admin_dashboard, consultation
   const [showLoginModal, setShowLoginModal] = useState(false); // Estado para el modal de login
+  const [authMode, setAuthMode] = useState('login');
+  const [authForm, setAuthForm] = useState({ email: '', password: '', name: '' });
+  const [authError, setAuthError] = useState('');
+  const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [authTurnstileToken, setAuthTurnstileToken] = useState('');
+  const [bookingTurnstileToken, setBookingTurnstileToken] = useState('');
+  const [appointments, setAppointments] = useState([]);
+  const [appointmentsError, setAppointmentsError] = useState('');
+  const [consultationForm, setConsultationForm] = useState({
+    notes: '', weight: '', bodyFat: '', muscleMass: '', actionPlan: '',
+  });
+  const [consultationError, setConsultationError] = useState('');
+  const [adminSection, setAdminSection] = useState('agenda');
   
   // Estados del agendamiento
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,13 +43,6 @@ export default function NutricionistaSystem() {
   const [selectedTime, setSelectedTime] = useState(null);
   const [bookingStep, setBookingStep] = useState(1);
   const [activePatient, setActivePatient] = useState(null);
-
-  // Datos simulados
-  const mockAppointments = [
-    { id: 1, patient: 'Camila Pérez', date: 'Hoy', time: '15:00', type: 'Online', status: 'pending' },
-    { id: 2, patient: 'Andrés Tapia', date: 'Hoy', time: '16:30', type: 'Presencial', status: 'pending' },
-    { id: 3, patient: 'Valentina Soto', date: 'Mañana', time: '09:00', type: 'Online', status: 'pending' },
-  ];
 
   const getNextDays = () => {
     const days = [];
@@ -40,30 +55,129 @@ export default function NutricionistaSystem() {
   };
   const availableDays = getNextDays();
   const timeSlots = ['09:00', '10:30', '12:00', '15:00', '16:30', '18:00'];
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+  async function loadAppointments() {
+    const token = window.localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+      setAppointmentsError('');
+      const result = await authenticatedRequest('/appointments', token);
+      setAppointments(result);
+    } catch (error) {
+      setAppointmentsError(error.message);
+    }
+  }
 
   // Navegación
-  const handleLogin = (role) => {
-    setCurrentUser(role);
-    setShowLoginModal(false);
-    if (role === 'admin') setCurrentView('admin_dashboard');
-    else setCurrentView('landing'); 
+  const handleAuthSubmit = async (event) => {
+    event.preventDefault();
+    setAuthError('');
+    setIsSubmittingAuth(true);
+
+    try {
+      const response = await apiRequest(`/auth/${authMode === 'login' ? 'login' : 'register'}`, {
+        method: 'POST',
+        body: JSON.stringify({ ...authForm, turnstileToken: authTurnstileToken || undefined }),
+      });
+
+      if (authMode === 'register') {
+        setAuthMode('login');
+        setAuthForm({ email: authForm.email, password: '', name: '' });
+        setAuthError('Cuenta creada. Ahora inicia sesión.');
+        return;
+      }
+
+      const role = response.user.role === 'ADMIN' ? 'admin' : 'patient';
+      window.localStorage.setItem('accessToken', response.access_token ?? '');
+      window.localStorage.setItem('userRole', role);
+      setCurrentUser(role);
+      setAuthForm({ email: '', password: '', name: '' });
+      setAuthTurnstileToken('');
+      setShowLoginModal(false);
+      setCurrentView(role === 'admin' ? 'admin_dashboard' : 'landing');
+      await loadAppointments();
+    } catch (error) {
+      setAuthError(error.message);
+    } finally {
+      setIsSubmittingAuth(false);
+    }
+
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
+    window.localStorage.removeItem('accessToken');
+    window.localStorage.removeItem('userRole');
     setCurrentView('landing');
     setBookingStep(1);
   };
 
+  const confirmAppointment = async () => {
+    const token = window.localStorage.getItem('accessToken');
+    if (!token || !selectedDate || !selectedTime) return;
+
+    setBookingError('');
+    try {
+      const appointmentDate = new Date(selectedDate);
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      appointmentDate.setHours(hours, minutes, 0, 0);
+
+      await authenticatedRequest('/appointments', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          date: appointmentDate.toISOString(),
+          type: 'Online',
+          turnstileToken: bookingTurnstileToken || undefined,
+        }),
+      });
+      setBookingStep(2);
+      setBookingTurnstileToken('');
+    } catch (error) {
+      setBookingError(error.message);
+    }
+  };
+
   const startConsultation = (patient) => {
     setActivePatient(patient);
+    setConsultationError('');
+    setConsultationForm({ notes: '', weight: '', bodyFat: '', muscleMass: '', actionPlan: '' });
     setCurrentView('consultation');
+  };
+
+  const saveConsultation = async () => {
+    const token = window.localStorage.getItem('accessToken');
+    if (!token || !activePatient?._id) return;
+
+    try {
+      setConsultationError('');
+      await authenticatedRequest('/consultations', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          appointmentId: activePatient._id,
+          notes: consultationForm.notes,
+          actionPlan: consultationForm.actionPlan,
+          weight: consultationForm.weight ? Number(consultationForm.weight) : undefined,
+          bodyFat: consultationForm.bodyFat ? Number(consultationForm.bodyFat) : undefined,
+          muscleMass: consultationForm.muscleMass ? Number(consultationForm.muscleMass) : undefined,
+        }),
+      });
+      await authenticatedRequest(`/appointments/${activePatient._id}/status`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'COMPLETED' }),
+      });
+      setCurrentView('admin_dashboard');
+      await loadAppointments();
+    } catch (error) {
+      setConsultationError(error.message);
+    }
   };
 
   // ---------------------------------------------------------
   // COMPONENTE: MODAL DE LOGIN
   // ---------------------------------------------------------
-  const LoginModal = () => (
+  const loginModal = (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-opacity">
       <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full relative animate-in fade-in zoom-in duration-200">
         <button 
@@ -79,14 +193,54 @@ export default function NutricionistaSystem() {
           <h2 className="text-2xl font-serif font-bold text-slate-900">Iniciar Sesión</h2>
           <p className="text-slate-500 mt-2 text-sm">Para agendar tu hora y ver tu historial, ingresa a tu cuenta.</p>
         </div>
-        <div className="space-y-4">
-          <button onClick={() => handleLogin('patient')} className="w-full border-2 border-slate-200 hover:border-purple-600 hover:bg-purple-50 text-slate-700 p-4 rounded-xl font-medium flex items-center justify-center gap-3 transition-all">
-            <User className="h-5 w-5" /> Ingresar como Paciente
+        <form onSubmit={handleAuthSubmit} className="space-y-4">
+          {authMode === 'register' && (
+            <input
+              value={authForm.name}
+              onChange={(event) => setAuthForm({ ...authForm, name: event.target.value })}
+              placeholder="Nombre completo"
+              required
+              minLength={2}
+              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-purple-500"
+            />
+          )}
+          <input
+            type="email"
+            value={authForm.email}
+            onChange={(event) => setAuthForm({ ...authForm, email: event.target.value })}
+            placeholder="Correo electrónico"
+            required
+            className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-purple-500"
+          />
+          <input
+            type="password"
+            value={authForm.password}
+            onChange={(event) => setAuthForm({ ...authForm, password: event.target.value })}
+            placeholder="Contraseña"
+            required
+            minLength={8}
+            className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-purple-500"
+          />
+          {turnstileSiteKey && (
+            <Turnstile
+              siteKey={turnstileSiteKey}
+              onSuccess={setAuthTurnstileToken}
+              onExpire={() => setAuthTurnstileToken('')}
+            />
+          )}
+          {authError && <p className="text-sm text-red-600">{authError}</p>}
+          <button disabled={isSubmittingAuth} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white p-4 rounded-xl font-medium flex items-center justify-center gap-3 transition-all shadow-md">
+            {authMode === 'login' ? <User className="h-5 w-5" /> : <Leaf className="h-5 w-5 text-emerald-400" />}
+            {isSubmittingAuth ? 'Procesando...' : authMode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
           </button>
-          <button onClick={() => handleLogin('admin')} className="w-full bg-slate-900 hover:bg-slate-800 text-white p-4 rounded-xl font-medium flex items-center justify-center gap-3 transition-all shadow-md">
-            <Leaf className="h-5 w-5 text-emerald-400" /> Ingresar como Nutricionista
+          <button
+            type="button"
+            onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}
+            className="w-full text-sm text-purple-700 hover:text-purple-900"
+          >
+            {authMode === 'login' ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
@@ -103,9 +257,9 @@ export default function NutricionistaSystem() {
             <span className="font-serif text-xl font-bold">Portal Nutri</span>
           </div>
           <nav className="flex-1 space-y-2">
-            <a href="#" className="flex items-center gap-3 bg-purple-600 text-white px-4 py-3 rounded-xl font-medium"><CalendarIcon className="h-5 w-5" /> Agenda Hoy</a>
-            <a href="#" className="flex items-center gap-3 text-slate-400 hover:text-white px-4 py-3 rounded-xl font-medium transition-colors"><User className="h-5 w-5" /> Pacientes</a>
-            <a href="#" className="flex items-center gap-3 text-slate-400 hover:text-white px-4 py-3 rounded-xl font-medium transition-colors"><FileText className="h-5 w-5" /> Pautas y Archivos</a>
+            <button onClick={() => setAdminSection('agenda')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium ${adminSection === 'agenda' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'}`}><CalendarIcon className="h-5 w-5" /> Agenda Hoy</button>
+            <button onClick={() => setAdminSection('patients')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium ${adminSection === 'patients' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'}`}><User className="h-5 w-5" /> Pacientes</button>
+            <button onClick={() => setAdminSection('files')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium ${adminSection === 'files' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'}`}><FileText className="h-5 w-5" /> Pautas y Archivos</button>
           </nav>
           <button onClick={handleLogout} className="flex items-center gap-3 text-slate-400 hover:text-red-400 px-4 py-3 mt-auto transition-colors">
             <LogOut className="h-5 w-5" /> Cerrar Sesión
@@ -123,7 +277,7 @@ export default function NutricionistaSystem() {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className={`bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden ${adminSection === 'agenda' ? '' : 'hidden'}`}>
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
               <h2 className="text-xl font-bold text-slate-800">Próximos Pacientes</h2>
               <div className="relative">
@@ -133,26 +287,32 @@ export default function NutricionistaSystem() {
             </div>
             
             <div className="divide-y divide-slate-100">
-              {mockAppointments.map((apt) => (
-                <div key={apt.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+              {appointmentsError && <p className="p-6 text-sm text-red-600">{appointmentsError}</p>}
+              {!appointmentsError && appointments.length === 0 && (
+                <p className="p-6 text-sm text-slate-500">No hay citas registradas todavía.</p>
+              )}
+              {appointments.map((apt) => (
+                <div key={apt._id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center font-bold text-lg">
-                      {apt.patient.charAt(0)}
+                      {(apt.patientName ?? apt.patientEmail ?? '?').charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-lg">{apt.patient}</h3>
+                      <h3 className="font-bold text-slate-900 text-lg">{apt.patientName ?? apt.patientEmail}</h3>
                       <div className="flex gap-3 text-sm text-slate-500 mt-1">
-                        <span className="flex items-center gap-1"><CalendarIcon className="h-4 w-4" /> {apt.date}</span>
-                        <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {apt.time}</span>
+                        <span className="flex items-center gap-1"><CalendarIcon className="h-4 w-4" /> {new Date(apt.date).toLocaleDateString('es-CL')}</span>
+                        <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {new Date(apt.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
                         <span className="flex items-center gap-1"><Video className="h-4 w-4" /> {apt.type}</span>
+                        <span className="font-medium">{apt.status}</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => startConsultation(apt)} className="bg-purple-700 hover:bg-purple-800 text-white px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2">
+                    <button onClick={() => startConsultation({ ...apt, patient: apt.patientName ?? apt.patientEmail })} className="bg-purple-700 hover:bg-purple-800 text-white px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2">
                       <BookOpen className="h-4 w-4" /> Iniciar Consulta
                     </button>
-                    <button className="bg-white border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 text-slate-600 px-4 py-2.5 rounded-xl transition-colors">
+                    {apt.status === 'PENDING' && <button onClick={async () => { const token = window.localStorage.getItem('accessToken'); await authenticatedRequest(`/appointments/${apt._id}/status`, token, { method: 'PATCH', body: JSON.stringify({ status: 'CONFIRMED' }) }); await loadAppointments(); }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl transition-colors">Confirmar</button>}
+                    <button onClick={async () => { const token = window.localStorage.getItem('accessToken'); await authenticatedRequest(`/appointments/${apt._id}/cancel`, token, { method: 'PATCH' }); await loadAppointments(); }} className="bg-white border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 text-slate-600 px-4 py-2.5 rounded-xl transition-colors">
                       <XCircle className="h-5 w-5" />
                     </button>
                   </div>
@@ -160,6 +320,26 @@ export default function NutricionistaSystem() {
               ))}
             </div>
           </div>
+
+          {adminSection === 'patients' && (
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+              <h2 className="text-xl font-bold text-slate-800 mb-4">Pacientes</h2>
+              {Array.from(new Map(appointments.map((appointment) => [appointment.patientEmail, appointment])).values()).map((patient) => (
+                <div key={patient.patientEmail} className="border-b border-slate-100 py-4 last:border-0">
+                  <p className="font-semibold text-slate-900">{patient.patientName}</p>
+                  <p className="text-sm text-slate-500">{patient.patientEmail}</p>
+                </div>
+              ))}
+              {appointments.length === 0 && <p className="text-sm text-slate-500">Todavía no hay pacientes con citas.</p>}
+            </div>
+          )}
+
+          {adminSection === 'files' && (
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+              <h2 className="text-xl font-bold text-slate-800 mb-4">Pautas y Archivos</h2>
+              <p className="text-sm text-slate-500">Los archivos seleccionables para cada consulta aparecerán aquí. Actualmente puedes adjuntar la pauta desde la sala de consulta.</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -183,7 +363,7 @@ export default function NutricionistaSystem() {
               </span>
             </div>
           </div>
-          <button onClick={() => setCurrentView('admin_dashboard')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2">
+          <button onClick={saveConsultation} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2">
             <Send className="h-4 w-4" /> Finalizar y Enviar Pauta (PDF)
           </button>
         </div>
@@ -195,26 +375,27 @@ export default function NutricionistaSystem() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Motivo de consulta / Anamnesis actual</label>
-                  <textarea rows="4" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none" placeholder="Escribe aquí las observaciones..."></textarea>
+                  <textarea rows="4" value={consultationForm.notes} onChange={(event) => setConsultationForm({ ...consultationForm, notes: event.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none" placeholder="Escribe aquí las observaciones..."></textarea>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Peso (kg)</label>
-                    <input type="number" className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500" />
+                    <input type="number" value={consultationForm.weight} onChange={(event) => setConsultationForm({ ...consultationForm, weight: event.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">% Grasa</label>
-                    <input type="number" className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500" />
+                    <input type="number" value={consultationForm.bodyFat} onChange={(event) => setConsultationForm({ ...consultationForm, bodyFat: event.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">M. Muscular</label>
-                    <input type="number" className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500" />
+                    <input type="number" value={consultationForm.muscleMass} onChange={(event) => setConsultationForm({ ...consultationForm, muscleMass: event.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Plan de acción / Indicaciones (Esto irá en el PDF)</label>
-                  <textarea rows="6" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none" placeholder="1. Aumentar consumo de agua..."></textarea>
+                  <textarea rows="6" value={consultationForm.actionPlan} onChange={(event) => setConsultationForm({ ...consultationForm, actionPlan: event.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none" placeholder="1. Aumentar consumo de agua..."></textarea>
                 </div>
+                {consultationError && <p className="text-sm text-red-600">{consultationError}</p>}
               </div>
             </div>
           </div>
@@ -246,7 +427,7 @@ export default function NutricionistaSystem() {
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-slate-800 relative">
       
-      {showLoginModal && <LoginModal />}
+      {showLoginModal && loginModal}
 
       {/* NAVBAR */}
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm">
@@ -305,6 +486,7 @@ export default function NutricionistaSystem() {
               Agendar mi evaluación <ChevronRight className="h-5 w-5" />
             </a>
           </div>
+
         </div>
       </section>
 
@@ -499,7 +681,17 @@ export default function NutricionistaSystem() {
                       )}
                     </div>
                     <div className="md:col-span-2 pt-6 mt-6 border-t border-slate-100 flex justify-end">
-                      <button disabled={!selectedDate || !selectedTime} onClick={() => setBookingStep(2)} className="bg-purple-700 hover:bg-purple-800 disabled:bg-slate-300 text-white px-8 py-3 rounded-full font-medium transition-colors">Confirmar Cita</button>
+                      <div className="flex flex-col items-end gap-2">
+                        {bookingError && <p className="text-sm text-red-600">{bookingError}</p>}
+                        {turnstileSiteKey && (
+                          <Turnstile
+                            siteKey={turnstileSiteKey}
+                            onSuccess={setBookingTurnstileToken}
+                            onExpire={() => setBookingTurnstileToken('')}
+                          />
+                        )}
+                        <button disabled={!selectedDate || !selectedTime} onClick={confirmAppointment} className="bg-purple-700 hover:bg-purple-800 disabled:bg-slate-300 text-white px-8 py-3 rounded-full font-medium transition-colors">Confirmar Cita</button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -517,6 +709,33 @@ export default function NutricionistaSystem() {
           </div>
         </div>
       </section>
+
+      {currentUser === 'patient' && (
+        <section className="py-12 bg-slate-50">
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6">
+              <h3 className="text-xl font-bold text-slate-900 mb-4">Mis horas</h3>
+              {appointments.length === 0 ? (
+                <p className="text-sm text-slate-500">Todavía no tienes horas agendadas.</p>
+              ) : (
+                <div className="space-y-3">
+                  {appointments.map((appointment) => (
+                    <div key={appointment._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl bg-slate-50 border border-slate-200 p-4">
+                      <div>
+                        <p className="font-semibold text-slate-900">{new Date(appointment.date).toLocaleString('es-CL')}</p>
+                        <p className="text-sm text-slate-500">{appointment.type} · {appointment.status}</p>
+                      </div>
+                      {appointment.status !== 'CANCELLED' && appointment.status !== 'COMPLETED' && (
+                        <button onClick={async () => { const token = window.localStorage.getItem('accessToken'); await authenticatedRequest(`/appointments/${appointment._id}/cancel`, token, { method: 'PATCH' }); await loadAppointments(); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Cancelar hora</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       <footer className="bg-slate-900 px-4 py-8 text-center text-sm text-slate-300">
         <p>Ignacio Rodríguez • Claudio Palta | 2026 | Cloud Computing</p>

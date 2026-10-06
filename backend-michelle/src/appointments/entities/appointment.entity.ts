@@ -17,6 +17,12 @@ export class Appointment {
 	@Prop({ required: true, index: true })
 	patientId: string;
 
+	@Prop({ required: true })
+	patientName: string;
+
+	@Prop({ required: true })
+	patientEmail: string;
+
 	@Prop()
 	eventId?: string;
 }

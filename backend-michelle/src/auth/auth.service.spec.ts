@@ -12,7 +12,8 @@ describe('AuthService', () => {
     create: jest.fn(),
   };
   const jwtService = { signAsync: jest.fn() } as unknown as JwtService;
-  const service = new AuthService(userModel as never, jwtService);
+  const turnstileService = { verify: jest.fn() };
+  const service = new AuthService(userModel as never, jwtService, turnstileService as never);
 
   beforeEach(() => jest.clearAllMocks());
 
@@ -35,9 +36,13 @@ describe('AuthService', () => {
 
   it('rejects duplicate email', async () => {
     userModel.findOne.mockResolvedValue({ email: 'test@example.com' });
-    await expect(service.register({ email: 'test@example.com' })).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.register({
+        email: 'test@example.com',
+        password: 'password',
+        name: 'Test',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('logs in with valid credentials', async () => {

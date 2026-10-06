@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { ConsultationsModule } from './consultations/consultations.module';
+import { SecurityModule } from './security/security.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ConsultationsModule } from './consultations/consultations.module';
     AppointmentsModule,
     CalendarModule,
     ConsultationsModule,
+    SecurityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

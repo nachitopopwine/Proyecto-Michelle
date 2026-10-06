@@ -19,4 +19,8 @@ export class CreateAuthDto {
 	@IsOptional()
 	@IsIn(['PATIENT', 'ADMIN'])
 	role?: 'PATIENT' | 'ADMIN';
+
+	@IsOptional()
+	@IsString()
+	turnstileToken?: string;
 }

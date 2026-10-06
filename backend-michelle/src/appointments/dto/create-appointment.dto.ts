@@ -1,4 +1,4 @@
-import { IsDateString, IsIn, IsString } from 'class-validator';
+import { IsDateString, IsIn, IsOptional, IsString } from 'class-validator';
 
 export class CreateAppointmentDto {
 	@IsDateString()
@@ -7,6 +7,11 @@ export class CreateAppointmentDto {
 	@IsIn(['Online', 'Presencial', 'Domicilio'])
 	type: string;
 
+	@IsOptional()
 	@IsString()
-	patientId: string;
+	patientId?: string;
+
+	@IsOptional()
+	@IsString()
+	turnstileToken?: string;
 }
