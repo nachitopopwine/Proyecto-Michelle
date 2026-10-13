@@ -6,6 +6,7 @@ services:
       MONGO_INITDB_DATABASE: michelle
     volumes:
       - mongo_data:/data/db
+      - ./backups:/backups
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
       interval: 10s
@@ -21,10 +22,16 @@ services:
       MONGODB_URI: mongodb://mongo:27017/michelle
       JWT_SECRET: ${JWT_SECRET:-change-this-secret}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      TIME_ZONE: ${TIME_ZONE:-America/Santiago}
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_NAME: ${ADMIN_NAME:-Michelle Morales}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: ${GOOGLE_SERVICE_ACCOUNT_EMAIL:-}
+      GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:-}
+      GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-}
     depends_on:
       mongo:
         condition: service_healthy

@@ -7,6 +7,7 @@ import { Auth, AuthSchema } from './entities/auth.entity';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 import { RolesGuard } from './roles.guard';
+import { jwtSecret } from '../common/config';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { RolesGuard } from './roles.guard';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET || 'super_secreto_desarrollo', // En producción, usar variable de entorno
+      secret: jwtSecret(),
       signOptions: { expiresIn: '1d' }, // El token durará 1 día
     }),
   ],

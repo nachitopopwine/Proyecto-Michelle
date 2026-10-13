@@ -7,17 +7,25 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { ConsultationsModule } from './consultations/consultations.module';
 import { SecurityModule } from './security/security.module';
+import { MailModule } from './mail/mail.module';
+import { ScheduleModule } from './schedule/schedule.module';
+import { FilesModule } from './files/files.module';
+import { PatientsModule } from './patients/patients.module';
 
 @Module({
   imports: [
     MongooseModule.forRoot(
       process.env.MONGODB_URI ?? 'mongodb://localhost:27017/michelle',
     ),
-    AuthModule,
-    AppointmentsModule,
-    CalendarModule,
-    ConsultationsModule,
     SecurityModule,
+    MailModule,
+    AuthModule,
+    ScheduleModule,
+    CalendarModule,
+    AppointmentsModule,
+    FilesModule,
+    ConsultationsModule,
+    PatientsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -19,6 +19,22 @@ export class Auth {
 
 	@Prop({ required: true, enum: ['PATIENT', 'ADMIN'], default: 'PATIENT' })
 	role: 'PATIENT' | 'ADMIN';
+
+	/** Fecha en que aceptó el aviso de privacidad de datos de salud */
+	@Prop()
+	consentAt?: Date;
+
+	/** Notas internas de Michelle sobre el paciente (no visibles para el paciente) */
+	@Prop({ select: false })
+	adminNotes?: string;
+
+	@Prop({ select: false })
+	resetTokenHash?: string;
+
+	@Prop({ select: false })
+	resetTokenExpires?: Date;
+
+	createdAt?: Date;
 }
 
 export const AuthSchema = SchemaFactory.createForClass(Auth);

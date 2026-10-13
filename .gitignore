@@ -1,0 +1,6 @@
+
+# Respaldos locales de MongoDB
+backups/
+
+# Variables locales (credenciales)
+.env
