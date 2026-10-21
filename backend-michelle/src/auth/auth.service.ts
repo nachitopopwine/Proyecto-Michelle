@@ -75,6 +75,12 @@ export class AuthService implements OnModuleInit {
 
     return {
       message: 'Usuario creado exitosamente',
+      access_token: await this.jwtService.signAsync({
+        sub: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      }),
       user: { id: user._id.toString(), email: user.email, role: user.role },
     };
   }
@@ -147,7 +153,7 @@ export class AuthService implements OnModuleInit {
     user.resetTokenExpires = new Date(Date.now() + RESET_TOKEN_TTL_MS);
     await user.save();
 
-    const link = `${frontendUrl()}/?reset=${token}`;
+    const link = `${frontendUrl().split(',')[0].trim().replace(/\/$/, '')}/?reset=${token}`;
     const sent = await this.mailService.send({
       to: user.email,
       subject: 'Recupera tu contraseña',

@@ -29,7 +29,11 @@ function setup(appointmentStatus = 'CONFIRMED', existing: unknown = null) {
     findById: jest.fn().mockResolvedValue(appointment),
     complete: jest.fn().mockResolvedValue(appointment),
   };
-  const filesService = { findByIds: jest.fn().mockResolvedValue([]), findWithData: jest.fn().mockResolvedValue([]) };
+  const filesService = {
+    findByIds: jest.fn().mockResolvedValue([]),
+    findWithData: jest.fn().mockResolvedValue([]),
+    assertShareable: jest.fn().mockResolvedValue(undefined),
+  };
   const mailService = { send: jest.fn().mockResolvedValue(true), enabled: true };
   const service = new ConsultationsService(
     model as never,
@@ -37,7 +41,7 @@ function setup(appointmentStatus = 'CONFIRMED', existing: unknown = null) {
     filesService as never,
     mailService as never,
   );
-  return { service, model, appointmentsService, mailService };
+  return { service, model, appointmentsService, filesService, mailService };
 }
 
 describe('ConsultationsService', () => {
@@ -80,6 +84,14 @@ describe('ConsultationsService', () => {
   it('does not register a consultation for a cancelled appointment', async () => {
     const { service } = setup('CANCELLED');
     await expect(service.create({ appointmentId })).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects attachments that cannot be shared with the patient before saving', async () => {
+    const { service, model, filesService } = setup();
+    filesService.assertShareable.mockRejectedValue(new BadRequestException('Archivo de otro paciente'));
+    await expect(service.create({ appointmentId, attachmentIds: ['64b000000000000000000004'] }))
+      .rejects.toBeInstanceOf(BadRequestException);
+    expect(model.findOneAndUpdate).not.toHaveBeenCalled();
   });
 
   it('lists consultations ordered by newest', async () => {

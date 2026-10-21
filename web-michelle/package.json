@@ -3,11 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "overrides": {
+    "postcss": "^8.5.25"
+  },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start -p 3001"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.6.1",

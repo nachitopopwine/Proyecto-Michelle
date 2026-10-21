@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -74,6 +75,18 @@ export class FilesService {
       .exec();
   }
 
+  /** Solo se pueden entregar archivos generales o asignados a este paciente. */
+  async assertShareable(ids: string[], patientId: string) {
+    if (!ids.length) return;
+    const files = await this.findByIds(ids);
+    if (
+      files.length !== new Set(ids).size ||
+      files.some((file) => file.patientId && file.patientId !== patientId)
+    ) {
+      throw new BadRequestException('Uno de los archivos no existe o pertenece a otro paciente');
+    }
+  }
+
   async findWithData(ids: string[]) {
     return this.fileModel
       .find({ _id: { $in: ids.filter((id) => isValidObjectId(id)) } })
@@ -87,6 +100,9 @@ export class FilesService {
     const file = await this.fileModel.findById(id).select('+data').lean().exec();
     if (!file) throw new NotFoundException('Archivo no encontrado');
 
+    if (user.role !== 'ADMIN' && file.patientId && file.patientId !== user.sub) {
+      throw new ForbiddenException('No tienes acceso a este archivo');
+    }
     if (user.role !== 'ADMIN' && file.patientId !== user.sub) {
       const sharedWithPatient = await this.consultationModel.exists({
         patientId: user.sub,
@@ -100,6 +116,9 @@ export class FilesService {
 
   async remove(id: string) {
     if (!isValidObjectId(id)) throw new NotFoundException('Archivo no encontrado');
+    if (await this.consultationModel.exists({ attachmentIds: id, closed: true })) {
+      throw new ConflictException('El archivo ya fue entregado y forma parte del historial de una consulta');
+    }
     const file = await this.fileModel.findByIdAndDelete(id).lean().exec();
     if (!file) throw new NotFoundException('Archivo no encontrado');
     return { deleted: true };

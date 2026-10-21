@@ -52,6 +52,23 @@ describe('AppointmentsService', () => {
     });
   });
 
+  it('waits for the patient notification before confirming the booking response', async () => {
+    const { service, appointmentModel, mailService } = setup();
+    const appointment = { _id: 'appointment-1', date: new Date(futureDate), patientName: 'Patient', patientEmail: 'patient@example.com', type: 'Online' };
+    appointmentModel.create.mockResolvedValue(appointment);
+    let finishEmail!: (sent: boolean) => void;
+    mailService.send.mockImplementationOnce(() => new Promise<boolean>((resolve) => { finishEmail = resolve; }));
+
+    let completed = false;
+    const booking = service.create({ date: futureDate, type: 'Online' }, patientUser)
+      .then(() => { completed = true; });
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(completed).toBe(false);
+    finishEmail(true);
+    await booking;
+    expect(completed).toBe(true);
+  });
+
   it('rejects a slot that is already taken', async () => {
     const { service, appointmentModel } = setup();
     appointmentModel.findOne.mockResolvedValue({ _id: 'other' });

@@ -93,7 +93,7 @@ export class AppointmentsService implements OnApplicationBootstrap, OnModuleDest
     }
 
     await this.syncCalendar(appointment);
-    void this.notifyPatient(
+    await this.notifyPatient(
       appointment,
       bookedByAdmin ? 'Tu hora fue agendada' : 'Recibimos tu solicitud de hora',
       bookedByAdmin
@@ -101,7 +101,7 @@ export class AppointmentsService implements OnApplicationBootstrap, OnModuleDest
         : 'Tu solicitud quedó registrada y está pendiente de confirmación. Te avisaremos cuando Michelle la confirme.',
     );
     if (!bookedByAdmin) {
-      void this.notifyAdmin(
+      await this.notifyAdmin(
         `Nueva solicitud de hora: ${appointment.patientName}`,
         `${escapeHtml(appointment.patientName)} solicitó una hora ${escapeHtml(appointment.type)} para el ${formatChile(appointment.date)}.`,
       );
@@ -126,14 +126,14 @@ export class AppointmentsService implements OnApplicationBootstrap, OnModuleDest
     await this.calendarService.remove(appointment.eventId);
 
     if (user.role === 'ADMIN') {
-      void this.notifyPatient(
+      await this.notifyPatient(
         appointment,
         'Tu hora fue cancelada',
         'Lamentablemente tu hora fue cancelada. Puedes agendar una nueva cuando quieras.',
         appointment.cancelReason,
       );
     } else {
-      void this.notifyAdmin(
+      await this.notifyAdmin(
         `Hora cancelada por ${appointment.patientName}`,
         `${escapeHtml(appointment.patientName)} canceló su hora del ${formatChile(appointment.date)}. El bloque quedó libre.`,
       );
@@ -153,7 +153,7 @@ export class AppointmentsService implements OnApplicationBootstrap, OnModuleDest
     await this.syncCalendar(appointment);
 
     if (changed && status === 'CONFIRMED') {
-      void this.notifyPatient(appointment, 'Tu hora está confirmada', 'Michelle confirmó tu hora. ¡Te esperamos!');
+      await this.notifyPatient(appointment, 'Tu hora está confirmada', 'Michelle confirmó tu hora. ¡Te esperamos!');
     }
     return appointment;
   }

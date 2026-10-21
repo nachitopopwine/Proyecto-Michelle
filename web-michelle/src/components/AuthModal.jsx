@@ -24,6 +24,7 @@ export default function AuthModal({ initialMode = 'login', resetToken, onClose, 
   const [mode, setMode] = useState(initialMode);
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', acceptPrivacy: false });
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [challengeVersion, setChallengeVersion] = useState(0);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +39,8 @@ export default function AuthModal({ initialMode = 'login', resetToken, onClose, 
     setMode(next);
     setError('');
     setNotice('');
+    setTurnstileToken('');
+    setChallengeVersion((version) => version + 1);
   };
 
   const handleSubmit = async (event) => {
@@ -53,12 +56,12 @@ export default function AuthModal({ initialMode = 'login', resetToken, onClose, 
           method: 'POST',
           body: jsonBody({ email: form.email, password: form.password, turnstileToken: captcha }),
         });
-        onAuthenticated(response.access_token);
+        await onAuthenticated(response.access_token);
         return;
       }
 
       if (mode === 'register') {
-        await apiRequest('/auth/register', {
+        const response = await apiRequest('/auth/register', {
           method: 'POST',
           body: jsonBody({
             name: form.name,
@@ -69,12 +72,8 @@ export default function AuthModal({ initialMode = 'login', resetToken, onClose, 
             turnstileToken: captcha,
           }),
         });
-        // Inicia sesión directamente con la cuenta recién creada
-        const response = await apiRequest('/auth/login', {
-          method: 'POST',
-          body: jsonBody({ email: form.email, password: form.password }),
-        });
-        onAuthenticated(response.access_token);
+        // El registro ya devuelve la sesión: no se reutiliza el captcha (token de un solo uso).
+        await onAuthenticated(response.access_token);
         return;
       }
 
@@ -96,8 +95,16 @@ export default function AuthModal({ initialMode = 'login', resetToken, onClose, 
       setNotice(response.message);
     } catch (submitError) {
       setError(submitError.message);
+      if (mode !== 'reset') {
+        setTurnstileToken('');
+        setChallengeVersion((version) => version + 1);
+      }
     } finally {
       setSubmitting(false);
+      if (mode === 'forgot') {
+        setTurnstileToken('');
+        setChallengeVersion((version) => version + 1);
+      }
     }
   };
 
@@ -161,13 +168,13 @@ export default function AuthModal({ initialMode = 'login', resetToken, onClose, 
         )}
 
         {turnstileSiteKey && mode !== 'reset' && (
-          <Turnstile siteKey={turnstileSiteKey} onSuccess={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
+          <Turnstile key={challengeVersion} siteKey={turnstileSiteKey} onSuccess={setTurnstileToken} onExpire={() => setTurnstileToken('')} onError={() => setTurnstileToken('')} />
         )}
 
         <Alert>{error}</Alert>
         <Alert type="success">{notice}</Alert>
 
-        <button disabled={submitting} className="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-900 p-3.5 font-medium text-white shadow-md transition-all hover:bg-slate-800 disabled:bg-slate-400">
+        <button disabled={submitting || Boolean(turnstileSiteKey && mode !== 'reset' && !turnstileToken)} className="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-900 p-3.5 font-medium text-white shadow-md transition-all hover:bg-slate-800 disabled:bg-slate-400">
           {mode === 'login' && <User className="h-5 w-5" />}
           {mode === 'register' && <Leaf className="h-5 w-5 text-emerald-400" />}
           {mode === 'forgot' && <Mail className="h-5 w-5" />}

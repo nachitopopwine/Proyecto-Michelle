@@ -12,6 +12,7 @@ export default function NutricionistaSystem() {
   // undefined = verificando sesión, null = sin sesión
   const [user, setUser] = useState(undefined);
   const [view, setView] = useState('landing'); // landing | account
+  const [accountTab, setAccountTab] = useState('upcoming');
   const [authModal, setAuthModal] = useState(null); // null | { mode, resetToken? }
 
   async function loadSession() {
@@ -22,7 +23,7 @@ export default function NutricionistaSystem() {
     try {
       const profile = await authenticatedRequest('/auth/me');
       setUser(profile);
-      setView('account');
+      // Mantener la página principal visible aunque la sesión esté iniciada.
     } catch {
       setToken(null);
       setUser(null);
@@ -52,7 +53,13 @@ export default function NutricionistaSystem() {
   const handleAuthenticated = async (token) => {
     setToken(token);
     setAuthModal(null);
+    setView('landing');
     await loadSession();
+  };
+
+  const openAccountTab = (tab = 'upcoming') => {
+    setAccountTab(tab);
+    setView('account');
   };
 
   const handleLogout = () => {
@@ -80,9 +87,9 @@ export default function NutricionistaSystem() {
 
   if (user && view === 'account') {
     return user.role === 'ADMIN' ? (
-      <AdminDashboard user={user} onUserUpdated={setUser} onLogout={handleLogout} />
+      <AdminDashboard user={user} onUserUpdated={setUser} onLogout={handleLogout} onGoHome={() => setView('landing')} />
     ) : (
-      <PatientDashboard user={user} onUserUpdated={setUser} onLogout={handleLogout} onGoHome={() => setView('landing')} />
+      <PatientDashboard user={user} initialTab={accountTab} onUserUpdated={setUser} onLogout={handleLogout} onGoHome={() => setView('landing')} />
     );
   }
 
@@ -93,7 +100,8 @@ export default function NutricionistaSystem() {
         user={user}
         onLogin={() => setAuthModal({ mode: 'login' })}
         onLogout={handleLogout}
-        onOpenAccount={() => setView('account')}
+        onOpenAccount={() => openAccountTab()}
+        onOpenAccountTab={openAccountTab}
       />
     </>
   );

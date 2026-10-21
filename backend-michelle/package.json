@@ -5,6 +5,11 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "overrides": {
+    "@nestjs/swagger": {
+      "js-yaml": "^5.5.0"
+    }
+  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -80,7 +85,7 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": { "isolatedModules": true }, "diagnostics": false }]
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s",

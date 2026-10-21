@@ -31,11 +31,13 @@ describe('AuthService', () => {
       role: 'PATIENT',
     });
     (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
+    (jwtService.signAsync as jest.Mock).mockResolvedValue('token');
 
     await expect(
       service.register({ email: ' Test@Example.com ', password: 'password', name: 'Test', acceptPrivacy: true }),
     ).resolves.toEqual({
       message: 'Usuario creado exitosamente',
+      access_token: 'token',
       user: { id: 'user-1', email: 'test@example.com', role: 'PATIENT' },
     });
     expect(userModel.findOne).toHaveBeenCalledWith({ email: 'test@example.com' });

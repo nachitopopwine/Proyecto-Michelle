@@ -16,8 +16,8 @@ const TABS = [
   ['profile', 'Mi perfil', UserCog],
 ];
 
-export default function PatientDashboard({ user, onUserUpdated, onLogout, onGoHome }) {
-  const [tab, setTab] = useState('upcoming');
+export default function PatientDashboard({ user, initialTab = 'upcoming', onUserUpdated, onLogout, onGoHome }) {
+  const [tab, setTab] = useState(initialTab);
   const [appointments, setAppointments] = useState(null);
   const [pautas, setPautas] = useState(null);
   const [error, setError] = useState('');
@@ -76,7 +76,7 @@ export default function PatientDashboard({ user, onUserUpdated, onLogout, onGoHo
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
           <button type="button" onClick={onGoHome} className="flex items-center gap-2">
             <Leaf className="h-6 w-6 text-emerald-600" />
-            <span className="font-serif text-xl font-bold text-purple-900">Michelle Morales</span>
+            <span className="font-serif text-xl font-bold text-purple-900">Michelle Palta</span>
           </button>
           <div className="flex items-center gap-3">
             <button type="button" onClick={onGoHome} className="hidden items-center gap-1 text-sm text-slate-600 hover:text-purple-700 sm:flex"><Home className="h-4 w-4" /> Inicio</button>
@@ -118,7 +118,7 @@ export default function PatientDashboard({ user, onUserUpdated, onLogout, onGoHo
                       <div>
                         <p className="font-semibold text-slate-900">{formatDateTime(appointment.date)}</p>
                         <p className="mt-1 flex items-center gap-2 text-sm text-slate-500">{appointment.type} <StatusBadge status={appointment.status} /></p>
-                        {appointment.status === 'PENDING' && <p className="mt-1 text-xs text-amber-700">Michelle debe confirmar esta hora. Te avisaremos por correo.</p>}
+                        {appointment.status === 'PENDING' && <p className="mt-1 text-xs text-amber-700">Michelle debe confirmar esta hora. Revisa su estado aquí.</p>}
                       </div>
                       <button type="button" onClick={() => cancel(appointment)} className="self-start text-sm font-medium text-red-600 hover:text-red-800 sm:self-auto">Cancelar hora</button>
                     </li>

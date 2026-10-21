@@ -26,6 +26,7 @@ export default function BookingWidget({ patientId, onBooked }) {
   const [type, setType] = useState('Presencial');
   const [notes, setNotes] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [challengeVersion, setChallengeVersion] = useState(0);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [booked, setBooked] = useState(null);
@@ -74,6 +75,8 @@ export default function BookingWidget({ patientId, onBooked }) {
       setError(submitError.message);
     } finally {
       setSubmitting(false);
+      setTurnstileToken('');
+      setChallengeVersion((version) => version + 1);
       loadAvailability();
     }
   };
@@ -87,7 +90,7 @@ export default function BookingWidget({ patientId, onBooked }) {
         <h3 className="mb-2 text-xl font-bold text-slate-900">{patientId ? '¡Hora agendada!' : '¡Hora solicitada!'}</h3>
         <p className="text-slate-600">{formatDateTime(booked.date)} · {booked.type}</p>
         <p className="mt-1 mb-6 text-sm text-slate-500">
-          {patientId ? 'La hora quedó confirmada y se avisó al paciente.' : 'Michelle confirmará tu hora. Te avisaremos por correo.'}
+          {patientId ? 'La hora quedó confirmada y aparece en la agenda.' : 'Michelle revisará tu solicitud. Puedes seguir su estado en Mis horas.'}
         </p>
         <button type="button" onClick={() => setBooked(null)} className="rounded-full bg-slate-800 px-6 py-2.5 font-medium text-white hover:bg-slate-900">
           Agendar otra hora
@@ -180,7 +183,7 @@ export default function BookingWidget({ patientId, onBooked }) {
       <div className="flex flex-col items-stretch gap-3 border-t border-slate-100 pt-6 md:col-span-2 md:items-end">
         <Alert>{error}</Alert>
         {turnstileSiteKey && !patientId && (
-          <Turnstile siteKey={turnstileSiteKey} onSuccess={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
+          <Turnstile key={challengeVersion} siteKey={turnstileSiteKey} onSuccess={setTurnstileToken} onExpire={() => setTurnstileToken('')} onError={() => setTurnstileToken('')} />
         )}
         {selectedSlot && (
           <p className="text-sm text-slate-600">
@@ -189,7 +192,7 @@ export default function BookingWidget({ patientId, onBooked }) {
         )}
         <button
           type="button"
-          disabled={!selectedSlot || submitting || (type === 'Domicilio' && !notes.trim())}
+          disabled={!selectedSlot || submitting || Boolean(turnstileSiteKey && !patientId && !turnstileToken) || (type === 'Domicilio' && !notes.trim())}
           onClick={submit}
           className={`${primaryButton} rounded-full px-8 py-3`}
         >

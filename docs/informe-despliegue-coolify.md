@@ -1,5 +1,7 @@
 # Informe tecnico de despliegue en Coolify
 
+> **Informe histórico.** Describe una revisión anterior de `desarrollo-michelle` y contiene observaciones ya superadas (por ejemplo, que el frontend no consume la API). Para el estado actual de `arquitectura-monolito`, las pruebas verificadas y los pendientes, consultar [la guía actualizada](../GUIA_REVISION_Y_DESPLIEGUE.md) y el [README principal](../README.md). Coolify es una alternativa de despliegue, no el único destino posible.
+
 ## Estado de los cambios
 
 El proyecto se trabaja en la rama `desarrollo-michelle`.

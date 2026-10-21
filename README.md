@@ -1,5 +1,7 @@
 # Proyecto Michelle
 
+> **Actualización 15 de octubre de 2026:** Se corrigió el flujo de login/registro y se preparó una guía de publicación gratuita con Cloudflare Pages + Render + MongoDB Atlas. Antes de desplegar, leer **[GUIA_REVISION_Y_DESPLIEGUE.md](GUIA_REVISION_Y_DESPLIEGUE.md)**. El despliegue remoto y el correo real aún dependen de credenciales y pruebas en servicios externos. No subir `.env` ni datos clínicos.
+
 Sistema monolito para gestión de consultas nutricionales. El proyecto cumple el stack inscrito: Next.js, NestJS, API REST, MongoDB y Swagger.
 
 ## Arquitectura
@@ -63,7 +65,7 @@ Otros cambios: `docker-compose.yml` y `.env.example` traen las variables nuevas.
 
 ### Cómo se probó
 
-- **Unitarios (backend):** 29 tests en 7 suites (`npm test`). Cubren hora ocupada, carrera de doble reserva, cancelar o rechazar, consulta en borrador o finalizada sin poder reabrirse, recuperación de contraseña, zona horaria (horario de invierno y verano) y disponibilidad con feriados.
+- **Unitarios (backend):** 37 tests en 9 suites (`npm test -- --runInBand --silent`). Cubren reservas duplicadas, cancelaciones, consultas, recuperación de contraseña, zona horaria, disponibilidad y permisos de archivos de pacientes.
 - **API de punta a punta (stack en Docker):** 45 verificaciones del flujo mínimo y de permisos. Por ejemplo, un paciente no puede ver, cancelar ni descargar datos de otro.
 - **Interfaz (Playwright, Chromium):** 15 verificaciones, entre ellas escribir en el login sin perder el foco, agendar, que "Mis horas" se actualice sin volver a loguearse, que la sesión siga al recargar, el buscador, confirmar, finalizar la consulta, la ficha, el menú móvil y que no haya errores en consola.
 - Se revisó a mano el PDF generado y se probaron el respaldo y la restauración de Mongo.
@@ -167,7 +169,7 @@ Se necesita MongoDB local o una URI de MongoDB Atlas en `MONGODB_URI`.
 
 ## Calidad y CI
 
-El workflow `.github/workflows/ci.yml` ejecuta build, tests y coverage del backend, además del build del frontend. El backend mantiene un umbral mínimo de 60%; la suite actual supera ese umbral.
+El workflow `.github/workflows/ci.yml` ejecuta build, lint y tests del backend, además del build estático del frontend. La cobertura no se ejecuta en CI.
 
 ## Despliegue en Coolify
 

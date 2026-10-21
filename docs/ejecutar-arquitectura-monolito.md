@@ -61,7 +61,7 @@ Para crear la cuenta de nutricionista se recomienda definir estas variables en l
 ```powershell
 $env:ADMIN_EMAIL="michelle@example.com"
 $env:ADMIN_PASSWORD="reemplaza-esta-clave"
-$env:ADMIN_NAME="Michelle Morales"
+$env:ADMIN_NAME="Michelle Palta"
 ```
 
 Tambien se pueden definir las variables principales:
@@ -89,7 +89,7 @@ Ejemplo:
 ```powershell
 $env:ADMIN_EMAIL="michelle@example.com"
 $env:ADMIN_PASSWORD="UnaClaveSegura123!"
-$env:ADMIN_NAME="Michelle Morales"
+$env:ADMIN_NAME="Michelle Palta"
 ```
 
 Después hay que recrear el backend para que lea las variables:

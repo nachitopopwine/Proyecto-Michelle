@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Heart, Leaf, CheckCircle2, Clock, MapPin, Video, Home, ChevronRight, Info, Menu, X, BookOpen, User, Lock, CalendarDays,
+  Heart, Leaf, CheckCircle2, Clock, MapPin, Video, Home, ChevronRight, ChevronDown, Info, Menu, X, BookOpen, User, Lock, CalendarDays, CalendarPlus, History, FileText, UserCog,
 } from 'lucide-react';
 import fotoMichelle from '../assets/foto-michelle.jpeg';
 import BookingWidget from './BookingWidget';
@@ -18,14 +18,23 @@ const SERVICES = [
   [BookOpen, 'bg-teal-100 text-teal-700', 'Educación Alimentaria', 'Herramientas prácticas adaptadas a tu realidad para que tomes decisiones informadas.'],
 ];
 
+const PATIENT_LINKS = [
+  ['upcoming', 'Mis horas', CalendarDays],
+  ['book', 'Agendar', CalendarPlus],
+  ['history', 'Historial', History],
+  ['pautas', 'Mis pautas', FileText],
+  ['profile', 'Mi perfil', UserCog],
+];
+
 const NAV_LINKS = [
   ['#sobre-mi', 'Sobre mí'],
   ['#servicios', 'Servicios'],
   ['#modalidades', 'Modalidades'],
 ];
 
-export default function Landing({ user, onLogin, onLogout, onOpenAccount }) {
+export default function Landing({ user, onLogin, onLogout, onOpenAccount, onOpenAccountTab }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const closeMenu = () => setMenuOpen(false);
 
@@ -42,7 +51,7 @@ export default function Landing({ user, onLogin, onLogout, onOpenAccount }) {
           <div className="flex h-20 items-center justify-between">
             <a href="#" className="flex flex-shrink-0 items-center gap-2">
               <Leaf className="h-6 w-6 text-emerald-600" />
-              <span className="font-serif text-2xl font-bold tracking-tight text-purple-900">Michelle Morales</span>
+              <span className="font-serif text-2xl font-bold tracking-tight text-purple-900">Michelle Palta</span>
             </a>
 
             <div className="hidden items-center space-x-8 md:flex">
@@ -51,9 +60,26 @@ export default function Landing({ user, onLogin, onLogout, onOpenAccount }) {
               ))}
               {user ? (
                 <div className="flex items-center gap-4">
-                  <button type="button" onClick={onOpenAccount} className="flex items-center gap-2 font-medium text-purple-700 hover:text-purple-800">
-                    <User className="h-5 w-5" /> {user.role === 'ADMIN' ? 'Panel' : 'Mi cuenta'}
-                  </button>
+                  {user.role === 'ADMIN' ? (
+                    <button type="button" onClick={onOpenAccount} className="flex items-center gap-2 font-medium text-purple-700 hover:text-purple-800">
+                      <User className="h-5 w-5" /> Panel de administración
+                    </button>
+                  ) : (
+                    <div className="relative">
+                      <button type="button" onClick={() => setAccountMenuOpen(!accountMenuOpen)} aria-expanded={accountMenuOpen} aria-haspopup="true" className="flex items-center gap-2 font-medium text-purple-700 hover:text-purple-800">
+                        <User className="h-5 w-5" /> Mi espacio <ChevronDown className="h-4 w-4" />
+                      </button>
+                      {accountMenuOpen && (
+                        <div className="absolute right-0 top-full z-50 mt-3 w-48 overflow-hidden rounded-2xl border border-purple-100 bg-white py-2 shadow-xl" aria-label="Secciones de mi cuenta">
+                          {PATIENT_LINKS.map(([key, label, Icon]) => (
+                            <button key={key} type="button" onClick={() => { setAccountMenuOpen(false); onOpenAccountTab(key); }} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-purple-50">
+                              <Icon className="h-4 w-4 text-purple-700" /> {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <button type="button" onClick={onLogout} className="font-medium text-slate-500 hover:text-red-500">Salir</button>
                 </div>
               ) : (
@@ -79,7 +105,18 @@ export default function Landing({ user, onLogin, onLogout, onOpenAccount }) {
             ))}
             {user ? (
               <>
-                <button type="button" onClick={() => { closeMenu(); onOpenAccount(); }} className="block w-full rounded-xl px-4 py-3 text-left font-medium text-purple-700 hover:bg-purple-50">{user.role === 'ADMIN' ? 'Panel' : 'Mi cuenta'}</button>
+                {user.role === 'ADMIN' ? (
+                  <button type="button" onClick={() => { closeMenu(); onOpenAccount(); }} className="block w-full rounded-xl px-4 py-3 text-left font-medium text-purple-700 hover:bg-purple-50">Panel de administración</button>
+                ) : (
+                  <>
+                    <p className="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Mi espacio</p>
+                    {PATIENT_LINKS.map(([key, label, Icon]) => (
+                      <button key={key} type="button" onClick={() => { closeMenu(); onOpenAccountTab(key); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-purple-700 hover:bg-purple-50">
+                        <Icon className="h-4 w-4" /> {label}
+                      </button>
+                    ))}
+                  </>
+                )}
                 <button type="button" onClick={() => { closeMenu(); onLogout(); }} className="block w-full rounded-xl px-4 py-3 text-left font-medium text-slate-500 hover:bg-red-50">Salir</button>
               </>
             ) : (
@@ -117,7 +154,7 @@ export default function Landing({ user, onLogin, onLogout, onOpenAccount }) {
           <div className="flex flex-col items-center gap-12 lg:flex-row lg:gap-20">
             <div className="relative w-full lg:w-1/2">
               <div className="relative aspect-[4/5] overflow-hidden rounded-3xl shadow-2xl">
-                <img src={fotoMichelle.src} alt="Michelle Morales - Nutricionista" className="h-full w-full object-cover" />
+                <img src={fotoMichelle.src} alt="Michelle Palta - Nutricionista" className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-purple-900/40 to-transparent" />
               </div>
               <div className="absolute -right-6 -bottom-6 hidden max-w-xs rounded-2xl border border-purple-50 bg-white p-6 shadow-xl md:block">
@@ -127,7 +164,7 @@ export default function Landing({ user, onLogin, onLogout, onOpenAccount }) {
 
             <div className="w-full lg:w-1/2">
               <h2 className="mb-3 text-sm font-semibold tracking-wide text-purple-700 uppercase">¡Hola a todos y todas!</h2>
-              <h3 className="mb-6 font-serif text-3xl font-bold text-slate-900 md:text-4xl">Soy Michelle Morales</h3>
+              <h3 className="mb-6 font-serif text-3xl font-bold text-slate-900 md:text-4xl">Soy Michelle Palta</h3>
               <div className="space-y-5 text-lg leading-relaxed text-slate-600">
                 <p>
                   Nutricionista egresada de la <strong className="text-slate-800">Universidad Católica del Norte</strong>. Quiero darte la bienvenida a este espacio creado para compartir información, educación y herramientas que te ayuden a cuidar tu salud a través de la alimentación.

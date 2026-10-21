@@ -1,3 +1,4 @@
+import { RemindersController } from './reminders.controller';
 import { Module } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { AppointmentsController } from './appointments.controller';
@@ -17,7 +18,7 @@ import { CalendarModule } from '../calendar/calendar.module';
     ScheduleModule,
     CalendarModule,
   ],
-  controllers: [AppointmentsController],
+  controllers: [AppointmentsController, RemindersController],
   providers: [AppointmentsService, RolesGuard],
   exports: [AppointmentsService],
 })

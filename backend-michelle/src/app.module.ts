@@ -11,12 +11,11 @@ import { MailModule } from './mail/mail.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { FilesModule } from './files/files.module';
 import { PatientsModule } from './patients/patients.module';
+import { mongodbUri } from './common/config';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? 'mongodb://localhost:27017/michelle',
-    ),
+    MongooseModule.forRoot(mongodbUri()),
     SecurityModule,
     MailModule,
     AuthModule,

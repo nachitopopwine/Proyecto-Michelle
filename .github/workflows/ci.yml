@@ -1,10 +1,8 @@
-name: CI
-
+name: Verificar proyecto Michelle
 on:
   push:
-    branches: [main, desarrollo-michelle]
+    branches: [main, desarrollo-michelle, arquitectura-monolito]
   pull_request:
-    branches: [main]
 
 jobs:
   backend:
@@ -16,12 +14,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
           cache: npm
           cache-dependency-path: backend-michelle/package-lock.json
       - run: npm ci
       - run: npm run build
-      - run: npm test -- --runInBand --coverage
+      - run: npm run lint
+      - run: npm test -- --runInBand --silent
 
   frontend:
     runs-on: ubuntu-latest
@@ -32,8 +31,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
           cache: npm
           cache-dependency-path: web-michelle/package-lock.json
       - run: npm ci
-      - run: npm run build
+      - name: Compilar versión estática (igual que Cloudflare Pages)
+        env:
+          DEPLOY_STATIC: 'true'
+          NEXT_PUBLIC_API_URL: https://example.invalid
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run build

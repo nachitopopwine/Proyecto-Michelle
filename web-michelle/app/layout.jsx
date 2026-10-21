@@ -1,8 +1,8 @@
 import '../src/index.css';
 
 export const metadata = {
-  title: 'Michelle Morales | Nutricionismo integral',
-  description: 'Agenda tu consulta nutricional con Michelle Morales.',
+  title: 'Michelle Palta | Nutricionismo integral',
+  description: 'Agenda tu consulta nutricional con Michelle Palta.',
 };
 
 export default function RootLayout({ children }) {

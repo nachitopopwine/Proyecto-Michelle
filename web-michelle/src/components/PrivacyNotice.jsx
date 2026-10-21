@@ -4,7 +4,7 @@ export default function PrivacyNotice() {
   return (
     <div className="space-y-3 text-sm leading-relaxed text-slate-600">
       <p>
-        <strong className="text-slate-800">Responsable:</strong> Michelle Morales, nutricionista. Tus datos se usan
+        <strong className="text-slate-800">Responsable:</strong> Michelle Palta, nutricionista. Tus datos se usan
         exclusivamente para agendar tus horas, llevar tu ficha nutricional y enviarte tus pautas.
       </p>
       <p>

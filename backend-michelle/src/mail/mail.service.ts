@@ -18,7 +18,8 @@ export interface MailMessage {
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private readonly client = process.env.RESEND_API_KEY
+  // Evitar el remitente de pruebas en producción: se necesitan ambas variables.
+  private readonly client = process.env.RESEND_API_KEY && process.env.MAIL_FROM
     ? new Resend(process.env.RESEND_API_KEY)
     : null;
 
@@ -29,13 +30,13 @@ export class MailService {
   /** Devuelve true si el correo fue aceptado por el proveedor. Nunca lanza. */
   async send(message: MailMessage): Promise<boolean> {
     if (!this.client) {
-      this.logger.warn(`Correo NO enviado (RESEND_API_KEY no configurada): "${message.subject}" -> ${message.to}`);
+      this.logger.warn(`Correo NO enviado (RESEND_API_KEY o MAIL_FROM no configurada): "${message.subject}" -> ${message.to}`);
       return false;
     }
 
     try {
       const { error } = await this.client.emails.send({
-        from: process.env.MAIL_FROM ?? 'Michelle Morales Nutrición <onboarding@resend.dev>',
+        from: process.env.MAIL_FROM!,
         to: message.to,
         subject: message.subject,
         html: layout(message.html),
@@ -63,7 +64,7 @@ export function escapeHtml(value: string) {
 
 function layout(body: string) {
   return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1e293b">
-  <h2 style="color:#6b21a8">Michelle Morales · Nutrición Integral</h2>
+  <h2 style="color:#6b21a8">Michelle Palta · Nutrición Integral</h2>
   ${body}
   <p style="color:#64748b;font-size:12px;margin-top:32px">Este correo fue enviado automáticamente. Si tienes dudas, responde a tu nutricionista.</p>
 </div>`;

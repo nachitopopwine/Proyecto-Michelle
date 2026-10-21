@@ -44,6 +44,8 @@ export class ConsultationsService {
       throw new ConflictException('Esta consulta ya fue finalizada y no se puede modificar');
     }
 
+    await this.filesService.assertShareable(data.attachmentIds ?? existing?.attachmentIds ?? [], appointment.patientId);
+
     const consultation = await this.consultationModel
       .findOneAndUpdate(
         { appointmentId: data.appointmentId },
@@ -97,7 +99,7 @@ export class ConsultationsService {
     return consultations.map((item) => ({
       ...item,
       attachments: files
-        .filter((file) => item.attachmentIds?.includes(file._id.toString()))
+        .filter((file) => item.attachmentIds?.includes(file._id.toString()) && (!file.patientId || file.patientId === user.sub))
         .map((file) => ({ _id: file._id, name: file.name, mimeType: file.mimeType })),
     }));
   }
@@ -108,6 +110,9 @@ export class ConsultationsService {
       throw new ConflictException('Esta consulta ya fue finalizada y no se puede modificar');
     }
     const { finalize: _finalize, appointmentId: _appointmentId, ...data } = dto;
+    if (data.attachmentIds) {
+      await this.filesService.assertShareable(data.attachmentIds, consultation.patientId!);
+    }
     return this.consultationModel.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 

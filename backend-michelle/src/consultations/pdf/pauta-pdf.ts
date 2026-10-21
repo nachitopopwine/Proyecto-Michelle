@@ -1,3 +1,5 @@
+// pdfkit publica CommonJS; esta forma conserva su constructor al compilar Nest.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import PDFDocument = require('pdfkit');
 import { formatChile } from '../../common/timezone';
 
@@ -24,7 +26,7 @@ export function buildPautaPdf(data: PautaPdfData): Promise<Buffer> {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    doc.fillColor(PURPLE).font('Helvetica-Bold').fontSize(20).text('Michelle Morales');
+    doc.fillColor(PURPLE).font('Helvetica-Bold').fontSize(20).text('Michelle Palta');
     doc.fillColor(SLATE).font('Helvetica').fontSize(11).text('Nutricionista · Nutrición Integral');
     doc.moveDown(0.5);
     doc.strokeColor('#e9d5ff').lineWidth(2).moveTo(56, doc.y).lineTo(539, doc.y).stroke();

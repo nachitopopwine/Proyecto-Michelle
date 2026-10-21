@@ -1,6 +1,16 @@
-
-# Respaldos locales de MongoDB
-backups/
-
-# Variables locales (credenciales)
+# Credenciales: jamás subir al repositorio
 .env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencias, compilaciones y datos locales
+**/node_modules/
+**/.next/
+**/dist/
+**/coverage/
+**/out/
+backups/
+*.log
+.DS_Store

@@ -31,13 +31,22 @@ export class PatientsService {
               total: { $sum: { $cond: [{ $ne: ['$status', 'CANCELLED'] }, 1, 0] } },
               completed: { $sum: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0] } },
               lastVisit: { $max: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, '$date', null] } },
-              nextVisit: {
-                $min: {
+              upcomingDates: {
+                $push: {
                   $cond: [
                     { $and: [{ $in: ['$status', ['PENDING', 'CONFIRMED']] }, { $gt: ['$date', new Date()] }] },
                     '$date',
                     null,
                   ],
+                },
+              },
+            },
+          },
+          {
+            $addFields: {
+              nextVisit: {
+                $min: {
+                  $filter: { input: '$upcomingDates', as: 'date', cond: { $ne: ['$$date', null] } },
                 },
               },
             },

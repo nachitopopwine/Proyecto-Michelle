@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Leaf, Calendar as CalendarIcon, User, FileText, Clock, UserCog, LogOut, Menu, X } from 'lucide-react';
+import { Leaf, Calendar as CalendarIcon, User, FileText, Clock, UserCog, LogOut, Menu, X, Home } from 'lucide-react';
 import fotoMichelle from '../../assets/foto-michelle.jpeg';
 import { authenticatedRequest } from '../../lib/api';
 import { Card } from '../ui';
@@ -29,7 +29,7 @@ const SUBTITLES = {
   profile: 'Tus datos de acceso.',
 };
 
-export default function AdminDashboard({ user, onUserUpdated, onLogout }) {
+export default function AdminDashboard({ user, onUserUpdated, onLogout, onGoHome }) {
   const [section, setSection] = useState('agenda');
   const [patientId, setPatientId] = useState(null);
   const [consultationAppointment, setConsultationAppointment] = useState(null);
@@ -96,10 +96,12 @@ export default function AdminDashboard({ user, onUserUpdated, onLogout }) {
               {key === 'agenda' && pendingCount > 0 && <span className="ml-auto rounded-full bg-amber-400 px-2 text-xs font-bold text-slate-900">{pendingCount}</span>}
             </button>
           ))}
+          <button type="button" onClick={onGoHome} className="flex w-full items-center gap-3 px-4 py-3 text-slate-400 transition-colors hover:text-white md:hidden"><Home className="h-5 w-5" /> Página principal</button>
           <button type="button" onClick={onLogout} className="flex w-full items-center gap-3 px-4 py-3 text-slate-400 transition-colors hover:text-red-400 md:hidden">
             <LogOut className="h-5 w-5" /> Cerrar sesión
           </button>
         </nav>
+        <button type="button" onClick={onGoHome} className="hidden items-center gap-3 px-4 py-3 text-slate-400 transition-colors hover:text-white md:flex"><Home className="h-5 w-5" /> Página principal</button>
         <button type="button" onClick={onLogout} className="mt-auto hidden items-center gap-3 px-4 py-3 text-slate-400 transition-colors hover:text-red-400 md:flex">
           <LogOut className="h-5 w-5" /> Cerrar sesión
         </button>

@@ -1,0 +1,23 @@
+name: Recordatorios de consultas
+on:
+  schedule:
+    # Cada hora, mientras el backend gratuito puede estar dormido.
+    - cron: '12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  recordar:
+    # Configurar la URL en Settings -> Secrets and variables -> Actions -> Variables.
+    if: ${{ vars.MICHELLE_BACKEND_URL != '' }}
+    runs-on: ubuntu-latest
+    env:
+      API_URL: ${{ vars.MICHELLE_BACKEND_URL }}
+      CRON_SECRET: ${{ secrets.MICHELLE_CRON_SECRET }}
+    steps:
+      - name: Enviar recordatorios pendientes
+        run: |
+          test -n "$CRON_SECRET" || { echo 'Falta MICHELLE_CRON_SECRET'; exit 1; }
+          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 20 \
+            --max-time 150 --request POST \
+            --header "x-cron-secret: $CRON_SECRET" \
+            "${API_URL%/}/internal/reminders"
